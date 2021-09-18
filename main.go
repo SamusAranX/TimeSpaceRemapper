@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	version = "0.2"
+	version = "0.2.1"
 )
 
 func main() {
@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := remapper.NewMapper(opts.MemoryHog)
+	r := remapper.NewMapper(opts.MemoryHog, opts.Verbose)
 
 	err = r.RemapFrames(opts.InputDir, opts.InputPattern, opts.OutputDir, opts.StartIndex)
 	if err != nil {

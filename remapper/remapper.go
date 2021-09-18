@@ -18,14 +18,15 @@ type Remapper struct {
 	inputFrames []string
 
 	frameWidth, frameHeight int
-	hogMode bool
+	hogMode, verbose bool
 }
 
-func NewMapper(hogMode bool) Remapper {
+func NewMapper(hogMode, verbose bool) Remapper {
 	r := Remapper{
 		frameWidth: -1,
 		frameHeight: -1,
 		hogMode: hogMode,
+		verbose: verbose,
 	}
 	return r
 }
@@ -127,13 +128,13 @@ func (r *Remapper) hogCheck() error {
 func (r *Remapper) RemapFrames(inputDir, inputPattern, outputDir string, startFrame int) error {
 	r.loadFilesWithPattern(inputDir, inputPattern)
 
-	fmt.Println("preflight check")
+	fmt.Println("Preflight check…")
 	err := r.preflightCheck()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("hog check")
+	fmt.Println("Hog check…")
 	err = r.hogCheck()
 	if err != nil {
 		// This is the one non-critical error here, so we merely print it instead of panicking
@@ -142,11 +143,19 @@ func (r *Remapper) RemapFrames(inputDir, inputPattern, outputDir string, startFr
 
 	inputFrameCache := make([]image.Image, len(r.inputFrames))
 
+	numDigits := len(strconv.Itoa(r.frameWidth))
+
 	// there will be as many new frames as pixels the input frames are wide
 	for frameX := startFrame; frameX < r.frameWidth; frameX++ {
 		// new frames are as high as the input frames
 		// but as wide as the total number of input frames
 		img := image.NewRGBA(image.Rect(0, 0, len(r.inputFrames), r.frameHeight))
+
+		fmt.Printf("Building frame %0[3]*[1]d/%0[3]*[2]d…\n", frameX+1, r.frameWidth, numDigits)
+
+		if r.hogMode && frameX == 0 {
+			fmt.Println("(Subsequent frames will be processed much faster)")
+		}
 
 		percent := -1
 
@@ -185,21 +194,25 @@ func (r *Remapper) RemapFrames(inputDir, inputPattern, outputDir string, startFr
 			newPercent := int(math.Floor(float64(dstX) / float64(len(r.inputFrames)) * 100))
 			if newPercent >= percent+1 {
 				percent = newPercent
-				fmt.Printf("%03d%% (%d/%d)\n",
-					newPercent,
-					dstX,
-					len(r.inputFrames))
+				if r.verbose {
+					fmt.Printf("%03[1]d%% (%0[4]*[2]d/%0[4]*[3]d)\n",
+						newPercent,
+						dstX, len(r.inputFrames),
+						numDigits)
+				}
 			}
 		}
 
-		fmt.Printf("%03d%% (%d/%d)\n",
-			100,
-			len(r.inputFrames),
-			len(r.inputFrames))
+		if r.verbose {
+			fmt.Printf("%03[1]d%% (%0[4]*[2]d/%0[4]*[3]d)\n",
+				100,
+				len(r.inputFrames), len(r.inputFrames),
+				numDigits)
+		}
 
-		formatStr := fmt.Sprintf("frame%%0%dd.png", len(strconv.Itoa(r.frameWidth)))
-		newFileName := filepath.Join(outputDir, fmt.Sprintf(formatStr, frameX))
-		newFrameFile, err := os.Create(newFileName)
+		newFileName := fmt.Sprintf("frame%0[2]*[1]d.png", frameX, numDigits)
+		newFilePath := filepath.Join(outputDir, newFileName)
+		newFrameFile, err := os.Create(newFilePath)
 		if err != nil {
 			return err
 		}
