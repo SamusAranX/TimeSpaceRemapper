@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,9 @@ const (
 )
 
 func main() {
+	binName := filepath.Base(os.Args[0])
+	binNameNoExt := strings.TrimSuffix(binName, filepath.Ext(binName))
+
 	opts := CommandLineOpts{}
 
 	parser := flags.NewParser(&opts, flags.Default)
@@ -32,9 +36,9 @@ func main() {
 	}
 
 	if opts.Version {
-		fmt.Printf("tsr v%s - another useless tool by yours truly\n", version)
+		fmt.Printf("%s v%s - another useless tool by Peter Wunder\n", binNameNoExt, version)
 		fmt.Println("-----")
-		fmt.Println("example usage: TimeSpaceRemapper.exe -i \"frame_directory\" -p \"*.png\" -o \"output_dir\"")
+		fmt.Printf("example usage: %s -i \"frame_directory\" -p \"*.png\" -o \"output_dir\"\n", binName)
 		fmt.Println("               add -M to the options if you have loads of memory to keep frames in")
 		fmt.Println("               don't worry, it'll auto-disable itself if you don't")
 		os.Exit(0)
