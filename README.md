@@ -18,6 +18,7 @@ Application Options:
   -p, --pattern=     Input file name glob pattern (optional)
   -s, --start-index= Starting index (default: 0)
   -M, --memory-hog   Hog Mode (will attempt to keep all new frames in memory)
+  -V, --verbose      Outputs more status messages
   -v, --version      Show version and exit
 
 Help Options:
