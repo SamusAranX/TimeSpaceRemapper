@@ -3,6 +3,7 @@ module TimeSpaceRemapper
 go 1.17
 
 require (
+	github.com/dustin/go-humanize v1.0.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 )

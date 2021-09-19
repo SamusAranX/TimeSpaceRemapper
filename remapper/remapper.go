@@ -3,6 +3,7 @@ package remapper
 import (
 	"errors"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/mem"
 	"image"
 	"image/draw"
@@ -16,17 +17,18 @@ import (
 
 type Remapper struct {
 	inputFrames []string
+	hogLevel    int
+	verbose     bool
 
 	frameWidth, frameHeight int
-	hogMode, verbose bool
 }
 
-func NewMapper(hogMode, verbose bool) Remapper {
+func NewMapper(hogMode []bool, verbose bool) Remapper {
 	r := Remapper{
-		frameWidth: -1,
+		frameWidth:  -1,
 		frameHeight: -1,
-		hogMode: hogMode,
-		verbose: verbose,
+		hogLevel:    len(hogMode),
+		verbose:     verbose,
 	}
 	return r
 }
@@ -101,12 +103,17 @@ func (r *Remapper) preflightCheck() error {
 	return nil
 }
 
+//goland:noinspection GoErrorStringFormat
 func (r *Remapper) hogCheck() error {
-	if r.hogMode {
+	switch r.hogLevel {
+	case 0:
+		fmt.Println("Hog Mode disabled")
+		break
+	case 1:
 		vmmem, err := mem.VirtualMemory()
 		if err != nil {
-			r.hogMode = false
-			return errors.New("couldn't find how much free memory is left, disabling hog mode")
+			r.hogLevel = 0
+			return errors.New("Couldn't determine how much free memory is left, disabling Hog Mode")
 		}
 
 		freeMemory := vmmem.Free
@@ -114,12 +121,16 @@ func (r *Remapper) hogCheck() error {
 		framesInMemory := float64(freeMemory) / float64(bytesPerFrame)
 		framesInMemoryRounded := int(math.Floor(framesInMemory))
 		if framesInMemoryRounded < len(r.inputFrames) {
-			r.hogMode = false
-			errMsg := fmt.Sprintf("not enough memory for %d frames, disabling hog mode\n", len(r.inputFrames))
+			r.hogLevel = 0
+			errMsg := fmt.Sprintf("Not enough memory for %d frames, disabling Hog Mode\n", len(r.inputFrames))
+			errMsg += fmt.Sprintf("(Needed/Free: %s/%s)\n",
+				humanize.Bytes(uint64(bytesPerFrame*len(r.inputFrames))),
+				humanize.Bytes(freeMemory))
 			return errors.New(errMsg)
 		}
-
-		return nil
+		break
+	default:
+		fmt.Println("Forcing Hog Mode on")
 	}
 
 	return nil
@@ -153,7 +164,7 @@ func (r *Remapper) RemapFrames(inputDir, inputPattern, outputDir string, startFr
 
 		fmt.Printf("Building frame %0[3]*[1]d/%0[3]*[2]d…\n", frameX+1, r.frameWidth, numDigits)
 
-		if r.hogMode && frameX == 0 {
+		if r.hogLevel > 0 && frameX == 0 {
 			fmt.Println("(Subsequent frames will be processed much faster)")
 		}
 
@@ -178,7 +189,7 @@ func (r *Remapper) RemapFrames(inputDir, inputPattern, outputDir string, startFr
 					panic(err)
 				}
 
-				if r.hogMode {
+				if r.hogLevel > 0 {
 					inputFrameCache[dstX] = frameRaw
 				}
 			} else {

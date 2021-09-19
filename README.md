@@ -36,7 +36,8 @@ then start TimeSpaceRemapper to generate output frames:
 `./tsr -i ./frames -o ./newframes`
 
 You can optionally use `-M` to engage **Hog Mode**, which will try to store input frames in memory, *massively* speeding up frame generation.
-Hog Mode will disable itself if it detects there's insufficient free memory. In that case, try closing other memory hogs, downscaling your input frames, or getting more RAM.
+Hog Mode will disable itself if it detects there's insufficient free memory. If you *know* you have enough free memory though, use `-MM` to force Hog Mode on.
+Otherwise, try closing other memory hogs, downscaling your input frames, or getting more RAM.
 
 ## Examples
 
